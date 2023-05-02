@@ -4,6 +4,7 @@ from datetime import datetime
 import tkinter as tk
 from tkinter import ttk
 from tkinter import messagebox
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
 
 
 class BudgetTracker:
@@ -21,15 +22,15 @@ class BudgetTracker:
             return 0
         return self.transactions.iloc[-1]['balance']
 
-    def plot_balance(self):
-        self.transactions.plot(x='date', y='balance', kind='line')
-        plt.show()
-
     def save_data(self, filename):
         self.transactions.to_csv(filename, index=False)
 
     def load_data(self, filename):
         self.transactions = pd.read_csv(filename)
+
+    def save_data_to_excel(self, filename):
+        self.transactions.to_excel(filename, index=False, engine='openpyxl')
+
 
 def on_add_transaction():
     try:
@@ -54,7 +55,25 @@ def update_balance_display():
     balance_label.config(text=f"Current balance: {tracker.get_current_balance()}")
 
 def on_plot_balance():
-    tracker.plot_balance()
+    # Create a new window
+    graph_window = tk.Toplevel()
+    graph_window.title("Balance Graph")
+
+    # Create a figure and axis object for the graph
+    fig, ax = plt.subplots()
+
+    # Plot the balance data on the axis object
+    tracker.transactions.plot(x='date', y='balance', kind='line', ax=ax)
+
+    # Create a canvas to display the graph
+    canvas = FigureCanvasTkAgg(fig, master=graph_window)
+    canvas.draw()
+    canvas.get_tk_widget().pack()
+
+    # Create a toolbar for the graph
+    toolbar = NavigationToolbar2Tk(canvas, graph_window)
+    toolbar.update()
+    canvas.get_tk_widget().pack()
 
 def on_save_excel():
     excel_file = "budget_data.xlsx"
@@ -94,9 +113,9 @@ def main():
 
     tk.Label(input_frame, text="Month:").grid(row=2, column=0, padx=5, pady=5)
     months_var = tk.StringVar()
-    months = ttk.Combobox(input_frame, textvariable=months_var, values=months, state="readonly")
-    months.set(datetime.now().month)
-    months.grid(row=2, column=1, padx=5, pady=5)
+    months_combobox = ttk.Combobox(input_frame, textvariable=months_var, values=months, state="readonly")
+    months_combobox.set(months[datetime.now().month - 1])  # Set the current month
+    months_combobox.grid(row=2, column=1, padx=5, pady=5)
 
     tk.Label(input_frame, text="Day:").grid(row=3, column=0, padx=5, pady=5)
     entry_day = tk.Entry(input_frame)
@@ -125,36 +144,12 @@ def main():
     # Create a button to display the balance graph
     tk.Button(root, text="Plot Balance", command=on_plot_balance).grid(row=2, column=0, columnspan=2, padx=5, pady=5)
 
+    # Create a button to save data as an Excel file
+    tk.Button(root, text="Save to Excel", command=on_save_excel).grid(row=3, column=0, columnspan=2, padx=5, pady=5)
+
     # Run the main loop
     root.mainloop()
 
-    # Save the data to a CSV file
-    tracker.save_data(data_file)
 
-def save_data_to_excel(self, filename):
-    self.transactions.to_excel(filename, index=False, engine='openpyxl')
-
- def on_plot_balance():
-        # Create a new window
-        graph_window = tk.Toplevel()
-        graph_window.title("Balance Graph")
-
-        # Create a figure and axis object for the graph
-        fig, ax = plt.subplots()
-
-        # Plot the balance data on the axis object
-        tracker.transactions.plot(x='date', y='balance', kind='line', ax=ax)
-
-        # Create a canvas to display the graph
-        canvas = FigureCanvasTkAgg(fig, master=graph_window)
-        canvas.draw()
-        canvas.get_tk_widget().pack()
-
-        # Create a toolbar for the graph
-        toolbar = NavigationToolbar2Tk(canvas, graph_window)
-        toolbar.update()
-        canvas.get_tk_widget().pack()
-
-
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()
